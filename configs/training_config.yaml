@@ -1,0 +1,104 @@
+# Training Configuration for LLaVA-OneVision Safety Enhancement
+# Supporting  milestone: <think> token pre-training for safety reasoning
+
+training:
+  # Base model configuration
+  base_model:
+    name: "llava-onevision-7b"
+    path: "llava-hf/llava-onevision-qwen2-7b-ov"
+    trust_remote_code: true
+    
+  # Training data configuration for safety
+  data:
+    # : Select 4000 high-quality safety samples from 5000+ generated
+    high_quality_samples: 4000
+    total_available: 5000
+    selection_criteria:
+      - validation_passed: true
+      - min_cot_length: 5
+      - max_cot_length: 12
+      - quality_approved: true
+      - confidence_score: ">= 0.6"  # Safety confidence threshold
+    
+    # <think> token format configuration for safety reasoning
+    think_token:
+      start_token: "<think>"
+      end_token: "</think>"
+      format_template: "{start_token}{safety_cot_content}{end_token}"
+      
+  # SFT (Supervised Fine-Tuning) configuration
+  sft:
+    epochs: 1
+    batch_size: 16
+    learning_rate: 1.0e-5
+    warmup_steps: 100
+    max_seq_length: 2048
+    gradient_accumulation_steps: 4
+    dataloader_num_workers: 4
+    
+    # Optimizer settings
+    optimizer: "adamw"
+    weight_decay: 0.01
+    adam_beta1: 0.9
+    adam_beta2: 0.999
+    
+    # Learning rate scheduler
+    lr_scheduler_type: "cosine"
+    warmup_ratio: 0.1
+    
+    # Checkpointing
+    save_steps: 500
+    eval_steps: 250
+    logging_steps: 50
+    save_total_limit: 3
+    
+    # Safety-specific training parameters
+    safety_focus: true
+    balance_safe_unsafe: true  # Balance safe/unsafe samples during training
+    
+  # Warm-up training configuration for safety
+  warmup_training:
+    # : Low learning rate gradual injection for safety reasoning
+    initial_lr: 5.0e-6
+    warmup_steps: 500
+    gradual_injection: true
+    injection_schedule:
+      - step: 0
+        safety_cot_ratio: 0.1    # Start with 10% safety COT data
+      - step: 200
+        safety_cot_ratio: 0.3    # Increase to 30%
+      - step: 400
+        safety_cot_ratio: 0.6    # Increase to 60%
+      - step: 500
+        safety_cot_ratio: 1.0    # Full safety COT data
+    
+    batch_size: 8  # Smaller for gradual training
+    max_seq_length: 1536
+    
+  # Hardware configuration
+  hardware:
+    gpu_count: 1
+    mixed_precision: "bf16"  # Use bfloat16 for memory efficiency
+    deepspeed_config: "configs/deepspeed_config.json"
+    gradient_checkpointing: true
+    
+  # Logging and monitoring for safety training
+  logging:
+    use_wandb: true
+    project_name: "llava-onevision-safety-enhancement"
+    experiment_name: "_safety_think_token_pretraining"
+    log_model: false  # Don't upload model to wandb
+    
+    # Safety-specific metrics to track
+    safety_metrics:
+      - "safety_accuracy"
+      - "safe_precision" 
+      - "unsafe_recall"
+      - "confidence_distribution"
+    
+  # Output directories
+  output:
+    base_dir: "experiments/training"
+    sft_output_dir: "experiments/training/sft_7b_safety_think_token"
+    warmup_output_dir: "experiments/training/warmup_7b_safety_think_token"
+    logs_dir: "experiments/training/logs"

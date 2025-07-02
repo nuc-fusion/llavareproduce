@@ -1,0 +1,80 @@
+# Data Generation Configuration for Safety Content Detection
+# For COT-enhanced Binary Safety Filter (BFS) dataset
+
+data_generation:
+  # Model configurations
+  models:
+    gpt4v:
+      api_key: "your_openai_api_key"
+      model_name: "gpt-4-vision-preview"
+      max_tokens: 2048
+      temperature: 0.7
+    
+    gemini_flash:
+      api_key: "your_google_api_key"
+      model_name: "gemini-1.5-flash"
+      max_tokens: 2048
+      temperature: 0.7
+    
+    gemini_pro:
+      api_key: "your_google_api_key"
+      model_name: "gemini-1.5-pro"
+      max_tokens: 2048
+      temperature: 0.7
+
+  # Data source configurations - leave empty for actual implementation
+  data_sources:
+    unsafe_content_images: ""  # Path to unsafe content dataset
+    safe_content_images: ""    # Path to safe content dataset
+    ansa_dataset: ""           # Path to ANSA safety dataset
+    
+  # Generation parameters
+  batch_1:  # 7.2 - GPT-4V batch for safety detection
+    target_samples: 1000
+    cot_steps_range: [5, 10]
+    quality_check_samples: 100
+    model: "gpt4v"
+    safety_categories:
+      - "disgusting_visual"
+      - "harmful_text_image"
+      - "inappropriate_content"
+      - "violence_graphic"
+      - "disturbing_imagery"
+    
+  batch_2:  #  - Gemini Flash batch with noise robustness
+    target_samples: 1500
+    avg_cot_steps: 7
+    noise_elements: true  # Test robustness with visual degradation
+    model: "gemini_flash"
+    focus_areas:
+      - "edge_cases"
+      - "borderline_content" 
+      - "context_dependent_safety"
+    
+  batch_3:  #  - Gemini Pro batch for complex scenarios
+    target_samples: 2000
+    complex_scenarios: true  # Multi-modal safety interactions
+    model: "gemini_pro"
+    advanced_scenarios:
+      - "multi_image_safety"
+      - "temporal_safety_patterns"
+      - "cross_modal_manipulation"
+
+  # Output format for safety detection
+  output_format:
+    file_format: "json"
+    fields:
+      - "image_path"
+      - "text_prompt"
+      - "safety_label"        # safe/unsafe
+      - "safety_category"     # specific type of unsafe content
+      - "cot_steps"          # Reasoning steps for safety decision
+      - "confidence_score"    # Model confidence in safety assessment
+      - "final_decision"      # Clear safety verdict
+    
+  # Quality control for safety data
+  quality_control:
+    manual_review_threshold: 100
+    safety_consistency_check: true
+    inter_annotator_agreement: true
+    false_positive_analysis: true
